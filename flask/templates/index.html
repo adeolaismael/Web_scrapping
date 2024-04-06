@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Comparateur de prix</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+ 
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+ 
+    table {
+      width: 80%;
+      margin: 20px auto;
+      border-collapse: collapse;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+ 
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+ 
+    th {
+      background-color: #333;
+      color: #fff;
+    }
+ 
+    tbody tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+ 
+    tbody tr:hover {
+      background-color: #ddd;
+    }
+ 
+    .cheapest {
+      font-weight: bold;
+      color: green;
+    }
+ 
+    .fnac-price {
+      color: #007bff; /* Bleu pour les prix Mes bagages */
+    }
+ 
+    .baage-price {
+      color: #ff4500; /* Orange pour les prix baage */
+    }
+  </style>
+</head>
+<body>
+  <h1>Comparateur de prix des valises de voyage</h1>
+  <div id="filter-container" style="float: right; margin: 10px;">
+    <button id="filter-button">Filtrer par Marque</button>
+    <select id="brand-filter">
+      <!-- Les options seront ajoutées dynamiquement par JavaScript -->
+    </select>
+  </div>
+  <table id="table-prix">
+    <thead>
+      <tr>
+        <th>Volume</th>
+        <th>Prix (Mes bagages)</th>
+        <th>Prix (baage)</th>
+        <th>Site Source</th>
+        <th>Site le moins cher</th>
+        <th>Article</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script>
+    $(function() {
+      // Récupère les données de la table Mes bagages
+      $.ajax({
+        url: "http://localhost:8080/index.php?route=/sql&pos=0&db=fnac_valise&table=products",
+        type: "GET",
+        dataType: "json",
+        success: function(data) {
+          updateTable(data, "Mes bagages");
+        },
+        error: function(err) {
+          console.error("Erreur lors de la récupération des données Mes bagages:", err);
+        }
+      });
+ 
+      // Récupère les données de la table baage
+      // Récupère les données des valises
+    $.ajax({
+        url: "/prices",  // URL mise à jour pour correspondre à l'endpoint Flask
+        type: "GET",
+        dataType: "json",
+        success: function(data) {
+            updateTable(data);  // Appel à une fonction pour mettre à jour la table
+        },
+        error: function(err) {
+            console.error("Erreur lors de la récupération des données:", err);
+        }
+    });
+
+ 
+      function updateTable(data, source) {
+        // Vérifie si des données sont présentes
+        if (data.length === 0) {
+          // Aucune donnée n'est disponible pour ce site
+          console.log("Aucune donnée disponible pour le site", source);
+          return;
+        }
+ 
+        // Crée un objet pour stocker le prix minimum et le lien associé pour chaque plage de volumes
+        var minPrices = {};
+ 
+        // Met à jour la table avec les données de la source spécifiée
+        for (var i = 0; i < data.length; i++) {
+          var volume = calculateVolumeRange(data[i]["nom"]);
+ 
+          // Initialise l'objet pour la plage de volumes si c'est la première occurrence
+          if (!minPrices[volume]) {
+            minPrices[volume] = {
+              mesbagages: Number.MAX_SAFE_INTEGER,
+              baage: Number.MAX_SAFE_INTEGER,
+              link: "",
+            };
+          }
+ 
+          // Met à jour le prix minimum et le lien associé
+          var price = parseFloat(data[i]["prix"]);
+          if (price < minPrices[volume][source]) {
+            minPrices[volume][source] = price;
+            minPrices[volume].link = data[i]["lien"];
+          }
+        }
+ 
+        // Affiche les données dans le tableau en utilisant les valeurs de prix minimum et le lien associé
+        for (var volumeRange in minPrices) {
+          var ligne = $('<tr></tr>');
+          ligne.append($('<td></td>').text(volumeRange));
+          ligne.append($('<td></td>').text(minPrices[volumeRange].mesbagages));
+          ligne.append($('<td></td>').text(minPrices[volumeRange].baage));
+          ligne.append($('<td></td>').text(source));
+          ligne.append($('<td class="cheapest"></td>').text(minPrices[volumeRange][source]));
+          ligne.append($('<td></td>').html('<a href="' + minPrices[volumeRange].link + '">Voir l\'article</a>'));
+          $('#table-prix tbody').append(ligne);
+        }
+ 
+        // Mise à jour du menu déroulant avec les marques uniques
+        updateBrandDropdown(data);
+      }
+ 
+      // Reste du code...
+    });
+  </script>
+</body>
+</html>
+ 
+ 

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Liste des Valises</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Liste des Valises</h1>
+        <div id="products">
+            <!-- Les cartes produits seront insérées ici par jQuery -->
+        </div>
+    </div>
+    <script>
+        $(document).ready(function() {
+            $.getJSON('/prices', function(data) {
+                var productsDiv = $('#products');
+                $.each(data, function(key, valise) {
+                    var card = $('<div class="product-card"></div>');
+                    card.append('<img src="' + valise.image_url + '" alt="valise">'); // Assurez-vous que 'image' est une colonne dans votre base de données
+                    card.append('<h3>' + valise.nom + '</h3>');
+                    card.append('<p class="brand">' + valise.marque + '</p>');
+                    card.append('<p class="price">' + valise.prix + ' €</p>');
+                    card.append('<a href="' + valise.lien + '" target="_blank" class="link">Voir l\'article</a>');
+                    productsDiv.append(card);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
